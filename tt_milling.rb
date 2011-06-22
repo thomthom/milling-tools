@@ -252,6 +252,7 @@ module TT_MillingTools
 					# Find the centre line going between the two edges and ensure it runs
 					# towards the corner.
 					vector = line1[1] * line2[1]
+          next unless vector.valid?
 					tr = Geom::Transformation.rotation(point, vector, half_angle)
 					mid_v = line2[1].transform(tr).normalize
 					mid_v.reverse! if turn_right
