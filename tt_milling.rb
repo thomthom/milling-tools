@@ -110,7 +110,7 @@ module TT_MillingTools
 				tool_path = []
 				fillet_corners = []
 				loop.each { |corner|
-					vertex, tool_position, tool_offset, tool_fillet, dog_bone_points, existing_fillet = corner
+					command, vertex, tool_position, tool_offset, tool_fillet, dog_bone_points, existing_fillet = corner
 					# Draw Corner
 					unless tool_offset.nil?
 						if existing_fillet
@@ -141,20 +141,31 @@ module TT_MillingTools
 		
 		def draw(view)
 			return if @cursor_point.face.nil?
-			
+      
 			face = @cursor_point.face
 			loops = fillets(face)
 			
 			loops.each { |loop|
 				tool_path = []
 				fillet_corners = []
+        invalid = []
+        
+        view.line_width = 1
 				loop.each { |corner|
 					#puts corner.length
 					#puts corner.inspect
 
-					vertex, tool_position, tool_offset, tool_fillet, dog_bone_points, existing_fillet = corner
+					command, vertex, tool_position, tool_offset, tool_fillet, dog_bone_points, existing_fillet = corner
 					tool_path << tool_position
-					fillet_corners << tool_position unless tool_offset.nil? 
+					fillet_corners << tool_position unless tool_offset.nil?
+          # Corner Radius
+					view.line_stipple = ''
+					view.drawing_color = 'orange'
+					view.draw(GL_LINES, vertex.position, tool_position)
+          # Catch Invalid
+          if command == :invalid
+            invalid << vertex.position
+          end
 					# Draw Corner
 					unless tool_offset.nil?
 						# Tool Fillet
@@ -190,6 +201,9 @@ module TT_MillingTools
 				view.draw_points(tool_path, 10, 4, 'purple')
 				# Tool Path Fillet Corners
 				view.draw_points(fillet_corners, 10, 1, 'purple') unless fillet_corners.empty?
+        # Invalid Points
+        view.line_width = 2
+				view.draw_points(invalid, 20, 6, 'red') unless invalid.empty?
 				@drawn = true
 			}
 		end
@@ -238,7 +252,7 @@ module TT_MillingTools
 					point = vertex.position
 					
 					# Calculate the angle
-					angle = line1[1].angle_between(edge2.line[1])
+					angle = line1[1].angle_between(line2[1])
 					angle = Math::PI - angle
 					half_angle = angle / 2
 					
@@ -252,7 +266,10 @@ module TT_MillingTools
 					# Find the centre line going between the two edges and ensure it runs
 					# towards the corner.
 					vector = line1[1] * line2[1]
-          next unless vector.valid?
+          unless vector.valid?
+            # Colinear edges - skip this vertex as it is not a corner.
+            next
+          end
 					tr = Geom::Transformation.rotation(point, vector, half_angle)
 					mid_v = line2[1].transform(tr).normalize
 					mid_v.reverse! if turn_right
@@ -263,6 +280,16 @@ module TT_MillingTools
 					radius = @tool_size / 2
 					offset = TT_MillingTools.csc(half_angle) * radius
 					op = point.offset(mid_v, offset)
+          
+          # If two edges are close to co-linear then ignore it. This is to account
+          # for SketchUp's lack of true arcs/curves.
+          # (?) Ignore vertices within existing arcs?
+          # (!) Angle should be user configurable
+          if angle < 10.degrees ||
+            ( ( edge1.curve && edge2.curve ) && edge1.curve == edge2.curve )
+            corners << [:offset, vertex, op]
+            next
+          end
 					
 					# Draw tool corner fillet
 					if turn_right
@@ -297,15 +324,15 @@ module TT_MillingTools
 						# (!) Hack
 						if tool_fillet.length > 1
 							if existing_fillet
-								corners << [vertex, op, tool_end, tool_fillet, fillet_points, true]
+								corners << [:cut, vertex, op, tool_end, tool_fillet, fillet_points, true]
 							else
-								corners << [vertex, op, tool_end, tool_fillet, fillet_points]
+								corners << [:cut, vertex, op, tool_end, tool_fillet, fillet_points]
 							end
 						else
-							corners << [vertex, op]
+							corners << [:offset, vertex, op]
 						end
 					else
-						corners << [vertex, op]
+						corners << [:offset, vertex, op]
 					end
 				} # loop.edgeuses
 				loops << corners
