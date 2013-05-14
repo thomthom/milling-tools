@@ -17,6 +17,7 @@ module TT
   ### CONSTANTS ### ------------------------------------------------------------
   
   # Plugin information
+  PLUGIN          = self
   PLUGIN_ID       = 'TT_MillingTools'.freeze
   PLUGIN_NAME     = 'Milling Tools'.freeze
   PLUGIN_VERSION  = '0.3.0'.freeze

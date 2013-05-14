@@ -1,26 +1,29 @@
-#-----------------------------------------------------------------------------
-# Version: 0.2.1a
-# Compatible: SketchUp 6.0 (PC)
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 #
 # Thomas Thomassen
 # thomas[at]thomthom[dot]net
 #
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 
 require 'sketchup.rb'
 
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 
-module TT_MillingTools
+module TT
+ module Plugins
+	module MillingTools
+
+	### MENU & TOOLBARS ### ------------------------------------------------------
 	
-	unless file_loaded?('tt_milling.rb')
-	# Menus
-	tools_menu = UI.menu('Tools')
-	menu = tools_menu.add_submenu('Milling Tools')
-	menu.add_item('Dog-Bone Fillet')		{ self.dog_bone }
+	unless file_loaded?( __FILE__ )
+		# Menus
+		tools_menu = UI.menu('Tools')
+		menu = tools_menu.add_submenu(PLUGIN_NAME)
+		menu.add_item('Dog-Bone Fillet')		{ self.dog_bone }
 	end
 	
+
+	### MAIN SCRIPT ### ----------------------------------------------------------
 	
 	def self.dog_bone
 		Sketchup.active_model.select_tool( Dog_Bone.new )
@@ -104,7 +107,7 @@ module TT_MillingTools
 			model = Sketchup.active_model
 			entities = model.active_entities
 			
-			TT_MillingTools.start_operation('Dog-Bone Fillets')
+			PLUGIN.start_operation('Dog-Bone Fillets')
 			
 			loops.each { |loop|
 				tool_path = []
@@ -126,7 +129,7 @@ module TT_MillingTools
 							
 							curve_edges = entities.add_curve(dog_bone_points)
 							curve = curve_edges.first.curve
-							curve.set_attribute('TT_MillingTools', 'Type', 'Dog-Bone')
+							curve.set_attribute(PLUGIN_ID, 'Type', 'Dog-Bone')
 							
 							temp_edge = temp_edges.select { |edge| edge.valid? }
 							entities.erase_entities(temp_edge)
@@ -141,16 +144,16 @@ module TT_MillingTools
 		
 		def draw(view)
 			return if @cursor_point.face.nil?
-      
+			
 			face = @cursor_point.face
 			loops = fillets(face)
 			
 			loops.each { |loop|
 				tool_path = []
 				fillet_corners = []
-        invalid = []
-        
-        view.line_width = 1
+				invalid = []
+				
+				view.line_width = 1
 				loop.each { |corner|
 					#puts corner.length
 					#puts corner.inspect
@@ -158,14 +161,14 @@ module TT_MillingTools
 					command, vertex, tool_position, tool_offset, tool_fillet, dog_bone_points, existing_fillet = corner
 					tool_path << tool_position
 					fillet_corners << tool_position unless tool_offset.nil?
-          # Corner Radius
+					# Corner Radius
 					view.line_stipple = ''
 					view.drawing_color = 'orange'
 					view.draw(GL_LINES, vertex.position, tool_position)
-          # Catch Invalid
-          if command == :invalid
-            invalid << vertex.position
-          end
+					# Catch Invalid
+					if command == :invalid
+						invalid << vertex.position
+					end
 					# Draw Corner
 					unless tool_offset.nil?
 						# Tool Fillet
@@ -201,8 +204,8 @@ module TT_MillingTools
 				view.draw_points(tool_path, 10, 4, 'purple')
 				# Tool Path Fillet Corners
 				view.draw_points(fillet_corners, 10, 1, 'purple') unless fillet_corners.empty?
-        # Invalid Points
-        view.line_width = 2
+				# Invalid Points
+				view.line_width = 2
 				view.draw_points(invalid, 20, 6, 'red') unless invalid.empty?
 				@drawn = true
 			}
@@ -241,7 +244,7 @@ module TT_MillingTools
 						edge2 = (other_vertex.edges - edge2.curve.edges).first
 						existing_fillet = true
 					else
-						vertex = TT_MillingTools.common_vertex(edge1, edge2)
+						vertex = PLUGIN.common_vertex(edge1, edge2)
 					end
 					
 					line1 = edge1.line
@@ -266,10 +269,10 @@ module TT_MillingTools
 					# Find the centre line going between the two edges and ensure it runs
 					# towards the corner.
 					vector = line1[1] * line2[1]
-          unless vector.valid?
-            # Colinear edges - skip this vertex as it is not a corner.
-            next
-          end
+					unless vector.valid?
+						# Colinear edges - skip this vertex as it is not a corner.
+						next
+					end
 					tr = Geom::Transformation.rotation(point, vector, half_angle)
 					mid_v = line2[1].transform(tr).normalize
 					mid_v.reverse! if turn_right
@@ -278,18 +281,18 @@ module TT_MillingTools
 					
 					# Calculate the offset point
 					radius = @tool_size / 2
-					offset = TT_MillingTools.csc(half_angle) * radius
+					offset = PLUGIN.csc(half_angle) * radius
 					op = point.offset(mid_v, offset)
-          
-          # If two edges are close to co-linear then ignore it. This is to account
-          # for SketchUp's lack of true arcs/curves.
-          # (?) Ignore vertices within existing arcs?
-          # (!) Angle should be user configurable
-          if angle < 10.degrees ||
-            ( ( edge1.curve && edge2.curve ) && edge1.curve == edge2.curve )
-            corners << [:offset, vertex, op]
-            next
-          end
+					
+					# If two edges are close to co-linear then ignore it. This is to account
+					# for SketchUp's lack of true arcs/curves.
+					# (?) Ignore vertices within existing arcs?
+					# (!) Angle should be user configurable
+					if angle < 10.degrees ||
+						( ( edge1.curve && edge2.curve ) && edge1.curve == edge2.curve )
+						corners << [:offset, vertex, op]
+						next
+					end
 					
 					# Draw tool corner fillet
 					if turn_right
@@ -346,7 +349,7 @@ module TT_MillingTools
 				if edge.curve.nil?
 					false
 				else
-					not edge.curve.get_attribute('TT_MillingTools', 'Type').nil?
+					not edge.curve.get_attribute(PLUGIN_ID, 'Type').nil?
 				end
 			}
 		end
@@ -399,9 +402,43 @@ module TT_MillingTools
 			model.start_operation(name)
 		end
 	end
-	
-end # module
 
-#-----------------------------------------------------------------------------
-file_loaded('tt_milling.rb')
-#-----------------------------------------------------------------------------
+	### DEBUG ### ----------------------------------------------------------------
+	
+	# @note Debug method to reload the plugin.
+	#
+	# @example
+	#   TT::Plugins::Template.reload
+	#
+	# @param [Boolean] tt_lib Reloads TT_Lib2 if +true+.
+	#
+	# @return [Integer] Number of files reloaded.
+	# @since 1.0.0
+	def self.reload( tt_lib = false )
+		original_verbose = $VERBOSE
+		$VERBOSE = nil
+		TT::Lib.reload if tt_lib
+		# Core file (this)
+		load __FILE__
+		# Supporting files
+		if defined?( PATH ) && File.exist?( PATH )
+			x = Dir.glob( File.join(PATH, '*.{rb,rbs}') ).each { |file|
+				load file
+			}
+			x.length + 1
+		else
+			1
+		end
+	ensure
+		$VERBOSE = original_verbose
+	end
+	
+	end # module MillingTools
+ end # module Plugins
+end # module TT
+
+#-------------------------------------------------------------------------------
+
+file_loaded( __FILE__ )
+
+#-------------------------------------------------------------------------------
