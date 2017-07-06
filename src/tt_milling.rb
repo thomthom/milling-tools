@@ -13,23 +13,23 @@ require 'extensions.rb'
 module TT
  module Plugins
   module MillingTools
-  
+
   ### CONSTANTS ### ------------------------------------------------------------
-  
+
   # Plugin information
   PLUGIN          = self
   PLUGIN_ID       = 'TT_MillingTools'.freeze
   PLUGIN_NAME     = 'Milling Tools'.freeze
   PLUGIN_VERSION  = '0.3.0'.freeze
-  
+
   # Resource paths
   FILENAMESPACE = File.basename( __FILE__, '.rb' )
   PATH_ROOT     = File.dirname( __FILE__ ).freeze
   PATH          = File.join( PATH_ROOT, FILENAMESPACE ).freeze
-  
-  
+
+
   ### EXTENSION ### ------------------------------------------------------------
-  
+
   unless file_loaded?( __FILE__ )
     loader = File.join( PATH, 'core.rb' )
     ex = SketchupExtension.new( PLUGIN_NAME, loader )
@@ -39,7 +39,7 @@ module TT
     ex.creator     = 'Thomas Thomassen (thomas@thomthom.net)'
     Sketchup.register_extension( ex, true )
   end
-  
+
   end # module MillingTools
  end # module Plugins
 end # module TT
