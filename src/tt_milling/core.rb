@@ -1,29 +1,28 @@
 #-------------------------------------------------------------------------------
 #
-# Thomas Thomassen
-# thomas[at]thomthom[dot]net
+#    Author: Thomas Thomassen
+# Copyright: Copyright (c) 2010–2017
+#   License: None
 #
 #-------------------------------------------------------------------------------
 
-require 'sketchup.rb'
-
-#-------------------------------------------------------------------------------
-
-module TT
- module Plugins
-  module MillingTools
+module TT::Plugins::MillingTools
 
   ### MENU & TOOLBARS ### ------------------------------------------------------
 
   unless file_loaded?( __FILE__ )
-    # Menus
     tools_menu = UI.menu('Tools')
-    menu = tools_menu.add_submenu(PLUGIN_NAME)
-    menu.add_item('Dog-Bone Fillet')		{ self.dog_bone }
+    menu = tools_menu.add_submenu(EXTENSION[:name])
+    menu.add_item('Dog-Bone Fillet') { self.dog_bone }
+
+    file_loaded(__FILE__)
   end
 
 
   ### MAIN SCRIPT ### ----------------------------------------------------------
+
+  # Compatibility (TODO: Remove)
+  PLUGIN_ID = EXTENSION[:product_id]
 
   def self.dog_bone
     Sketchup.active_model.select_tool( Dog_Bone.new )
@@ -405,40 +404,17 @@ module TT
 
   ### DEBUG ### ----------------------------------------------------------------
 
-  # @note Debug method to reload the plugin.
-  #
-  # @example
-  #   TT::Plugins::Template.reload
-  #
-  # @param [Boolean] tt_lib Reloads TT_Lib2 if +true+.
-  #
-  # @return [Integer] Number of files reloaded.
-  # @since 1.0.0
-  def self.reload( tt_lib = false )
+  # TT::Plugins::MillingTools.reload
+  def self.reload
     original_verbose = $VERBOSE
     $VERBOSE = nil
-    TT::Lib.reload if tt_lib
-    # Core file (this)
     load __FILE__
-    # Supporting files
-    if defined?( PATH ) && File.exist?( PATH )
-      x = Dir.glob( File.join(PATH, '*.{rb,rbs}') ).each { |file|
-        load file
-      }
-      x.length + 1
-    else
-      1
-    end
+    x = Dir.glob( File.join(PATH, '*.rb') ).each { |file|
+      load file
+    }
+    x.size + 1
   ensure
     $VERBOSE = original_verbose
   end
 
-  end # module MillingTools
- end # module Plugins
-end # module TT
-
-#-------------------------------------------------------------------------------
-
-file_loaded( __FILE__ )
-
-#-------------------------------------------------------------------------------
+end # module
