@@ -6,11 +6,15 @@
 #
 #-------------------------------------------------------------------------------
 
+require 'tt_milling/utils/object_info'
+
+
 module TT::Plugins::MillingTools
 
   class Shapes
 
     include Enumerable
+    include ObjectInfo
 
     def initialize(shapes)
       @shapes = shapes
@@ -34,7 +38,7 @@ module TT::Plugins::MillingTools
 
     def inspect
       items = @shapes.join(', ')
-      "<#{self::class::name}:#{object_id} #{@shapes.size} shapes: [#{items}]>"
+      object_info(" #{@shapes.size} shapes: [#{items}]")
     end
 
   end # class

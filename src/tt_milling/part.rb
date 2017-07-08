@@ -6,9 +6,14 @@
 #
 #-------------------------------------------------------------------------------
 
+require 'tt_milling/utils/object_info'
+
+
 module TT::Plugins::MillingTools
 
   class Part
+
+    include ObjectInfo
 
     attr_reader :shapes, :transformation
 
@@ -22,7 +27,7 @@ module TT::Plugins::MillingTools
     end
 
     def inspect
-      "<#{self::class::name}:#{object_id} #{@shapes.size} shapes>"
+      object_info(" #{@shapes.size} shapes")
     end
 
   end # class
