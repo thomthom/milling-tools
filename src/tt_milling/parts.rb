@@ -84,22 +84,27 @@ module TT::Plugins::MillingTools
   def self.generate_part_instance(part, x, y)
     model = Sketchup.active_model
     entities = model.active_entities
-    group = entities.add_group
-    group.transformation = part.transformation
     tr = Geom::Transformation.new([x, y, 0])
+    # TODO: Reuse definitions.
+    definition = model.definitions.add('Part')
+    # TODO: Handle instance scaling.
     part.shapes.each { |shape|
       # Boundary
-      points = shape.points.map { |point| point.transform(tr) }
-      face = group.entities.add_face(points)
+      face = definition.entities.add_face(shape.points)
       face.reverse! unless face.normal.samedirection?(Z_AXIS)
       # Holes
       holes = shape.holes.map { |hole|
         points = hole.map { |point| point.transform(tr) }
-        group.entities.add_face(points)
+        definition.entities.add_face(hole)
       }
-      group.entities.erase_entities(holes)
+      definition.entities.erase_entities(holes)
     }
-    group
+    # Adjust the instance to the bounds of the entities.
+    offset = definition.bounds.min
+    tr_offset = Geom::Transformation.new(offset).inverse
+    transformation = tr_offset * tr
+    instance = entities.add_instance(definition, transformation)
+    instance
   end
 
 end # module
