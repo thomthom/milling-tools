@@ -8,6 +8,7 @@
 
 require 'tt_milling/utils/geom'
 require 'tt_milling/utils/instance'
+require 'tt_milling/utils/transformation'
 require 'tt_milling/part'
 require 'tt_milling/shape'
 require 'tt_milling/shapes'
@@ -24,7 +25,7 @@ module TT::Plugins::MillingTools
 
     parts = self.collect_parts(entities)
     # puts parts.join("\n")
-    parts.each { |part| p part }
+    # parts.each { |part| p part }
 
     model.start_operation('Generate Cut Parts', true)
     parts.each { |part|
@@ -36,14 +37,22 @@ module TT::Plugins::MillingTools
   end
 
 
-  def self.walk_instances(entities, transformation = IDENTITY, &block)
+  def self.walk_instances(entities, transformation = IDENTITY.clone, &block)
     entities.each { |entity|
       next unless self.is_instance?(entity)
-      block.call(entity, transformation)
-      definition = self.definition(entity)
       tr = entity.transformation * transformation
+      block.call(entity, tr)
+      definition = self.definition(entity)
       self.walk_instances(definition.entities, tr, &block)
     }
+  end
+
+
+  def self.extract_scaling(transformation)
+    transformation.extend(TransformationHelper)
+    sx, sy, sz = transformation.scales
+    # p [sx, sy, sz]
+    Geom::Transformation.scaling(sx, sy, sz)
   end
 
 
@@ -57,7 +66,8 @@ module TT::Plugins::MillingTools
       shapes = shape_cache[definition]
       next if shapes.empty?
       # Each instance have a Part counterpart.
-      parts << Part.new(shapes, transformation)
+      scaling_transformation = self.extract_scaling(transformation)
+      parts << Part.new(shapes, scaling_transformation)
     }
     parts
   end
@@ -87,22 +97,25 @@ module TT::Plugins::MillingTools
     tr = Geom::Transformation.new([x, y, 0])
     # TODO: Reuse definitions.
     definition = model.definitions.add('Part')
-    # TODO: Handle instance scaling.
     part.shapes.each { |shape|
       # Boundary
-      face = definition.entities.add_face(shape.points)
+      points = shape.points.map { |point| point.transform(part.transformation) }
+      face = definition.entities.add_face(points)
+      # face = definition.entities.add_face(shape.points)
       face.reverse! unless face.normal.samedirection?(Z_AXIS)
       # Holes
       holes = shape.holes.map { |hole|
-        points = hole.map { |point| point.transform(tr) }
-        definition.entities.add_face(hole)
+        points = hole.map { |point| point.transform(part.transformation) }
+        definition.entities.add_face(points)
+        # definition.entities.add_face(hole)
       }
       definition.entities.erase_entities(holes)
     }
     # Adjust the instance to the bounds of the entities.
-    offset = definition.bounds.min
-    tr_offset = Geom::Transformation.new(offset).inverse
-    transformation = tr_offset * tr
+    origin = definition.bounds.min
+    tr_origin = Geom::Transformation.new(origin).inverse
+    transformation = tr_origin * tr
+    # transformation = tr_origin * tr * part.transformation
     instance = entities.add_instance(definition, transformation)
     instance
   end
