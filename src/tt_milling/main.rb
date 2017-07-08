@@ -35,16 +35,28 @@ module TT::Plugins::MillingTools
     cmd.small_icon = File.join(PATH, 'images', '006-saw-1.svg')
     generate_parts = cmd
 
+    cmd = UI::Command.new('Set Ground Plane') {
+      self.ground_plane_tool
+    }
+    cmd.tooltip = 'Set Ground Plane'
+    cmd.status_bar_text = 'Pick a face to set the ground place for instances.'
+    cmd.large_icon = File.join(PATH, 'images', 'cube-1.svg')
+    cmd.small_icon = File.join(PATH, 'images', 'cube-1.svg')
+    ground_plane_tool = cmd
+
+
     menu = UI.menu('Plugins').add_submenu(EXTENSION[:name])
     menu.add_item(dog_bone_tool)
     menu.add_separator
     menu.add_item(generate_parts)
+    menu.add_item(ground_plane_tool)
     # TODO: Credit icon pack: http://www.flaticon.com/packs/industry-10
 
     toolbar = UI::Toolbar.new(EXTENSION[:name])
     toolbar.add_item(dog_bone_tool)
     toolbar.add_separator
     toolbar.add_item(generate_parts)
+    toolbar.add_item(ground_plane_tool)
     toolbar.restore
 
     file_loaded(__FILE__)
