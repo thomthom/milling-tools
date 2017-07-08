@@ -10,6 +10,7 @@ require 'tt_milling/utils/geom'
 require 'tt_milling/utils/instance'
 require 'tt_milling/part'
 require 'tt_milling/shape'
+require 'tt_milling/shapes'
 
 
 module TT::Plugins::MillingTools
@@ -28,21 +29,41 @@ module TT::Plugins::MillingTools
     model.start_operation('Generate Cut Parts', true)
     parts.each { |part|
       # p part
-      instance = self.generate_part(part, x, y)
+      instance = self.generate_part_instance(part, x, y)
       y += instance.bounds.height + 20.mm
     }
     model.commit_operation
   end
 
 
-  def self.collect_parts(entities)
-    instances = entities.select { |entity| self.is_instance?(entity) }
-    definitions = instances.map { |instance| self.definition(instance) }.uniq
-    definitions.map { |definition| self.create_parts(definition) }.flatten
+  def self.walk_instances(entities, transformation = IDENTITY, &block)
+    entities.each { |entity|
+      next unless self.is_instance?(entity)
+      block.call(entity, transformation)
+      definition = self.definition(entity)
+      tr = entity.transformation * transformation
+      self.walk_instances(definition.entities, tr, &block)
+    }
   end
 
 
-  def self.create_parts(definition)
+  def self.collect_parts(entities)
+    parts = []
+    shape_cache = {}
+    self.walk_instances(entities) { |instance, transformation|
+      definition = self.definition(instance)
+      # Compute one of set of shapes per definition.
+      shape_cache[definition] ||= self.create_shapes(definition)
+      shapes = shape_cache[definition]
+      next if shapes.empty?
+      # Each instance have a Part counterpart.
+      parts << Part.new(shapes, transformation)
+    }
+    parts
+  end
+
+
+  def self.create_shapes(definition)
     thickness = definition.bounds.depth
     faces = definition.entities.grep(Sketchup::Face)
     faces.select! { |face| self.on_ground?(face) }
@@ -56,16 +77,17 @@ module TT::Plugins::MillingTools
       }
       shape
     }
-    definition.instances.map { |_| Part.new(shapes) }.flatten
+    Shapes.new(shapes)
   end
 
 
-  def self.generate_part(part, x, y)
+  def self.generate_part_instance(part, x, y)
     model = Sketchup.active_model
     entities = model.active_entities
     group = entities.add_group
+    group.transformation = part.transformation
     tr = Geom::Transformation.new([x, y, 0])
-    part.each { |shape|
+    part.shapes.each { |shape|
       # Boundary
       points = shape.points.map { |point| point.transform(tr) }
       face = group.entities.add_face(points)
@@ -79,7 +101,5 @@ module TT::Plugins::MillingTools
     }
     group
   end
-
-
 
 end # module

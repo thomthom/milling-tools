@@ -8,13 +8,24 @@
 
 module TT::Plugins::MillingTools
 
-  class Part
+  class Shapes
 
-    attr_reader :shapes, :transformation
+    include Enumerable
 
-    def initialize(shapes, transformation)
+    def initialize(shapes)
       @shapes = shapes
-      @transformation = transformation
+    end
+
+    def each
+      @shapes.each { |shape| yield shape }
+    end
+
+    def empty?
+      @shapes.empty?
+    end
+
+    def size
+      @shapes.size
     end
 
     def to_s
@@ -22,7 +33,8 @@ module TT::Plugins::MillingTools
     end
 
     def inspect
-      "<#{self::class::name}:#{object_id} #{@shapes.size} shapes>"
+      items = @shapes.join(', ')
+      "<#{self::class::name}:#{object_id} #{@shapes.size} shapes: [#{items}]>"
     end
 
   end # class
