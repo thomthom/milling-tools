@@ -9,6 +9,7 @@
 require 'tt_milling/utils/geom'
 require 'tt_milling/utils/instance'
 require 'tt_milling/utils/transformation'
+require 'tt_milling/utils/walker'
 require 'tt_milling/part'
 require 'tt_milling/shape'
 require 'tt_milling/shapes'
@@ -34,17 +35,6 @@ module TT::Plugins::MillingTools
       y += instance.bounds.height + 20.mm
     }
     model.commit_operation
-  end
-
-
-  def self.walk_instances(entities, transformation = IDENTITY.clone, &block)
-    entities.each { |entity|
-      next unless self.is_instance?(entity)
-      tr = entity.transformation * transformation
-      block.call(entity, tr)
-      definition = self.definition(entity)
-      self.walk_instances(definition.entities, tr, &block)
-    }
   end
 
 
