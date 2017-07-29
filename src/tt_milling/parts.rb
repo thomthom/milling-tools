@@ -86,6 +86,7 @@ module TT::Plugins::MillingTools
     entities = model.active_entities
     tr = Geom::Transformation.new([x, y, 0])
     # TODO: Reuse definitions.
+    # TODO: Update previously created parts.
     definition = model.definitions.add('Part')
     part.shapes.each { |shape|
       # Boundary
