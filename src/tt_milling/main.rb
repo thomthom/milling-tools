@@ -19,6 +19,7 @@ require 'tt_milling/parts'
 module TT::Plugins::MillingTools
 
   unless file_loaded?( __FILE__ )
+    # TODO: Add PDF and PNG versions of the icons.
     cmd = Command.new('Dog-Bone Fillets') {
       self.dog_bone
     }
