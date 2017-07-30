@@ -1,0 +1,10 @@
+{
+  "name": "Milling Tools",
+  "description": "Tools for working with models for laser and CNC cutting.",
+  "creator": "Thomas Thomassen",
+  "copyright": "Copyright © 2010–2017",
+  "license": "None",
+  "product_id": "TT_MillingTools",
+  "version": "0.4.0",
+  "build": "1"
+}
