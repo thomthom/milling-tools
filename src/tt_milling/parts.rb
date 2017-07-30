@@ -68,16 +68,22 @@ module TT::Plugins::MillingTools
     faces = definition.entities.grep(Sketchup::Face)
     faces.select! { |face| self.on_ground?(face) }
     shapes = faces.map { |face|
-      points = face.outer_loop.vertices.map(&:position)
-      shape = Shape.new(points, thickness)
-      face.loops.each { |loop|
-        next if loop.outer?
-        hole = loop.vertices.map(&:position)
-        shape.add_hole(hole)
-      }
-      shape
+      self.create_shape(face, thickness)
     }
     Shapes.new(shapes)
+  end
+
+
+  def self.create_shape(face, thickness)
+    # TODO: Preserve arcs and circles.
+    points = face.outer_loop.vertices.map(&:position)
+    shape = Shape.new(points, thickness)
+    face.loops.each { |loop|
+      next if loop.outer?
+      hole = loop.vertices.map(&:position)
+      shape.add_hole(hole)
+    }
+    shape
   end
 
 
