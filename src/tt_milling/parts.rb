@@ -2,7 +2,7 @@
 #
 #    Author: Thomas Thomassen
 # Copyright: Copyright (c) 2010–2017
-#   License: None
+#   License: The MIT License
 #
 #-------------------------------------------------------------------------------
 
