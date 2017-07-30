@@ -5,6 +5,7 @@
 #   License: The MIT License
 #
 #-------------------------------------------------------------------------------
+
 require 'set'
 
 require 'tt_milling/utils/geom'
@@ -27,12 +28,9 @@ module TT::Plugins::MillingTools
     y = 0
 
     parts = self.collect_parts(entities)
-    # puts parts.join("\n")
-    # parts.each { |part| p part }
 
     model.start_operation('Generate Cut Parts', true)
     parts.each { |part|
-      # p part
       instance = self.generate_part_instance(part, x, y)
       y += instance.bounds.height + 20.mm
     }
@@ -43,7 +41,6 @@ module TT::Plugins::MillingTools
   def self.extract_scaling(transformation)
     transformation.extend(TransformationHelper)
     sx, sy, sz = transformation.scales
-    # p [sx, sy, sz]
     Geom::Transformation.scaling(sx, sy, sz)
   end
 
