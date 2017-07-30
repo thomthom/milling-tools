@@ -48,7 +48,7 @@ module TT::Plugins::MillingTools
     ground_plane_tool = cmd
 
 
-    menu = UI.menu('Plugins').add_submenu(EXTENSION[:name])
+    menu = UI.menu('Plugins').add_submenu(EXTENSION.name)
     menu.add_item(dog_bone_tool)
     menu.add_separator
     menu.add_item(generate_parts)
@@ -57,7 +57,7 @@ module TT::Plugins::MillingTools
     menu.add_item(ground_plane_tool)
     # TODO: Credit icon pack: http://www.flaticon.com/packs/industry-10
 
-    toolbar = UI::Toolbar.new(EXTENSION[:name])
+    toolbar = UI::Toolbar.new(EXTENSION.name)
     toolbar.add_item(dog_bone_tool)
     toolbar.add_separator
     toolbar.add_item(generate_parts)

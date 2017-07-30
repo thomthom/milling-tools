@@ -41,14 +41,20 @@ module TT::Plugins::MillingTools
       @drawn = false
 
       updateVCB
+    rescue Exception => exception
+      ERROR_REPORTER.handle(exception)
     end
 
     def resume(view)
       updateVCB
+    rescue Exception => exception
+      ERROR_REPORTER.handle(exception)
     end
 
     def deactivate(view)
       view.invalidate if @drawn
+    rescue Exception => exception
+      ERROR_REPORTER.handle(exception)
     end
 
     def enableVCB?
@@ -63,6 +69,8 @@ module TT::Plugins::MillingTools
       end
       updateVCB
       view.invalidate
+    rescue Exception => exception
+      ERROR_REPORTER.handle(exception)
     end
 
     def updateVCB
@@ -82,6 +90,8 @@ module TT::Plugins::MillingTools
       if @cursor_point.pick(view, x, y)
         view.invalidate
       end
+    rescue Exception => exception
+      ERROR_REPORTER.handle(exception)
     end
 
 
@@ -126,6 +136,8 @@ module TT::Plugins::MillingTools
       }
 
       model.commit_operation
+    rescue Exception => exception
+      ERROR_REPORTER.handle(exception)
     end
 
 
@@ -196,6 +208,8 @@ module TT::Plugins::MillingTools
         view.draw_points(invalid, 20, 6, 'red') unless invalid.empty?
         @drawn = true
       }
+    rescue Exception => exception
+      ERROR_REPORTER.handle(exception)
     end
 
 

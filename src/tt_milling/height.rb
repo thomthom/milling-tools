@@ -15,6 +15,7 @@ require 'tt_milling/utils/walker'
 module TT::Plugins::MillingTools
 
   def self.prompt_part_height
+    8 / 0
     # Prompt the user.
     prompts = ['Part Height:']
     defaults = [2.mm]

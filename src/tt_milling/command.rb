@@ -30,12 +30,11 @@ module Command
   # (yuck!)
   def self.new(title, &block)
     command = UI::Command.new(title) {
-      # TODO: Add error reporter.
-      # begin
+      begin
         block.call
-      # rescue Exception => exception
-      #   ERROR_REPORTER.handle(exception)
-      # end
+      rescue Exception => exception
+        ERROR_REPORTER.handle(exception)
+      end
     }
     # Default tooltip will be the title.
     command.tooltip = title

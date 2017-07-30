@@ -25,19 +25,27 @@ module TT::Plugins::MillingTools
 
     def deactivate(view)
       view.invalidate
+    rescue Exception => exception
+      ERROR_REPORTER.handle(exception)
     end
 
     def resume(view)
       view.invalidate
+    rescue Exception => exception
+      ERROR_REPORTER.handle(exception)
     end
 
     def suspend(view)
       view.invalidate
+    rescue Exception => exception
+      ERROR_REPORTER.handle(exception)
     end
 
     def onMouseMove(flags, x, y, view)
       pick_ground(flags, x, y, view)
       view.invalidate
+    rescue Exception => exception
+      ERROR_REPORTER.handle(exception)
     end
 
      def onLButtonUp(flags, x, y, view)
@@ -64,6 +72,8 @@ module TT::Plugins::MillingTools
         end
       end
       view.invalidate
+    rescue Exception => exception
+      ERROR_REPORTER.handle(exception)
     end
 
     def draw(view)
@@ -97,6 +107,8 @@ module TT::Plugins::MillingTools
         view.drawing_color = [128, 0, 255]
         view.draw(GL_LINES, @centroid, point)
       end
+    rescue Exception => exception
+      ERROR_REPORTER.handle(exception)
     end
 
     private

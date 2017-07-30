@@ -7,6 +7,7 @@
 #-------------------------------------------------------------------------------
 
 require 'json'
+require 'ostruct'
 
 require 'extensions.rb'
 require 'sketchup.rb'
@@ -30,15 +31,18 @@ module MillingTools
   # Extension information.
   extension_json_file = File.join(PATH, 'extension.json')
   extension_json = File.read(extension_json_file)
-  EXTENSION = ::JSON.parse(extension_json, symbolize_names: true).freeze
+  EXTENSION = ::JSON.parse(extension_json,
+    symbolize_names: true,
+    object_class: OpenStruct
+  ).freeze
 
   unless file_loaded?(__FILE__)
-    loader = File.join(PATH, 'main')
-    @extension = SketchupExtension.new(EXTENSION[:name], loader)
-    @extension.description = EXTENSION[:description]
-    @extension.version     = EXTENSION[:version]
-    @extension.copyright   = EXTENSION[:copyright]
-    @extension.creator     = EXTENSION[:creator]
+    loader = File.join(PATH, 'bootstrap')
+    @extension = SketchupExtension.new(EXTENSION.name, loader)
+    @extension.description = EXTENSION.description
+    @extension.version     = EXTENSION.version
+    @extension.copyright   = EXTENSION.copyright
+    @extension.creator     = EXTENSION.creator
     Sketchup.register_extension(@extension, true)
   end
 
