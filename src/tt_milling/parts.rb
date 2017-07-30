@@ -5,11 +5,13 @@
 #   License: The MIT License
 #
 #-------------------------------------------------------------------------------
+require 'set'
 
 require 'tt_milling/utils/geom'
 require 'tt_milling/utils/instance'
 require 'tt_milling/utils/transformation'
 require 'tt_milling/utils/walker'
+require 'tt_milling/loop'
 require 'tt_milling/part'
 require 'tt_milling/shape'
 require 'tt_milling/shapes'
@@ -75,15 +77,39 @@ module TT::Plugins::MillingTools
 
 
   def self.create_shape(face, thickness)
-    # TODO: Preserve arcs and circles.
-    points = face.outer_loop.vertices.map(&:position)
-    shape = Shape.new(points, thickness)
+    boundary = self.extract_loop(face.outer_loop)
+    shape = Shape.new(boundary, thickness)
     face.loops.each { |loop|
       next if loop.outer?
-      hole = loop.vertices.map(&:position)
+      hole = self.extract_loop(loop)
       shape.add_hole(hole)
     }
     shape
+  end
+
+  def self.extract_loop(face_loop)
+    processed = Set.new
+    loop = Loop.new
+    face_loop.edges.each { |edge|
+      next if processed.include?(edge)
+      curve = edge.curve
+      if self.is_arc?(curve)
+        loop.add_arc(curve.center, curve.xaxis, curve.normal, curve.radius,
+                     curve.start_angle, curve.end_angle, curve.edges.size)
+        processed.merge(edge.curve.edges)
+      else
+        loop.add_edge(edge.start.position, edge.end.position)
+        processed << edge
+      end
+    }
+    loop
+  end
+
+
+  def self.is_arc?(curve)
+    return false if curve.nil?
+    return false unless curve.is_a?(Sketchup::ArcCurve)
+    !curve.is_polygon?
   end
 
 
@@ -96,22 +122,38 @@ module TT::Plugins::MillingTools
     definition = model.definitions.add('Part')
     part.shapes.each { |shape|
       # Boundary
-      points = shape.points.map { |point| point.transform(part.transformation) }
-      face = definition.entities.add_face(points)
+      face = self.face_from_loop(definition.entities, shape.outer_loop)
       face.reverse! unless face.normal.samedirection?(Z_AXIS)
       # Holes
       holes = shape.holes.map { |hole|
-        points = hole.map { |point| point.transform(part.transformation) }
-        definition.entities.add_face(points)
+        self.face_from_loop(definition.entities, hole)
       }
       definition.entities.erase_entities(holes)
     }
+    # Adjust position
+    definition.entities.transform_entities(part.transformation,
+                                           definition.entities.to_a)
     # Adjust the instance to the bounds of the entities.
     origin = definition.bounds.min
     tr_origin = Geom::Transformation.new(origin).inverse
     transformation = tr_origin * tr
     instance = entities.add_instance(definition, transformation)
     instance
+  end
+
+
+  def self.face_from_loop(entities, loop)
+    edges = []
+    loop.edges.each { |points|
+      edges << entities.add_line(*points)
+    }
+    loop.arcs.each { |arc|
+      arc_edges = entities.add_arc(arc.center, arc.xaxis, arc.normal, arc.radius,
+                                   arc.start_angle, arc.end_angle,
+                                   arc.num_segments)
+      edges.concat(arc_edges)
+    }
+    entities.add_face(edges)
   end
 
 end # module

@@ -15,16 +15,16 @@ module TT::Plugins::MillingTools
 
     include ObjectInfo
 
-    attr_accessor :points, :holes, :thickness
+    attr_accessor :outer_loop, :holes, :thickness
 
-    def initialize(points, thickness)
+    def initialize(outer_loop, thickness)
       @thickness = thickness.to_l
-      @points = points
+      @outer_loop = outer_loop
       @holes = []
     end
 
-    def add_hole(points)
-      @holes << points
+    def add_hole(loop)
+      @holes << loop
     end
 
     def to_s
@@ -32,7 +32,7 @@ module TT::Plugins::MillingTools
     end
 
     def inspect
-      object_info(" #{@thickness}, #{@points.size} points, #{@holes.size} holes")
+      object_info(" #{@thickness}, #{@outer_loop.size} points, #{@holes.size} holes")
     end
 
   end # class
