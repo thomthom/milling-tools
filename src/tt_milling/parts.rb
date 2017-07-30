@@ -92,13 +92,11 @@ module TT::Plugins::MillingTools
       # Boundary
       points = shape.points.map { |point| point.transform(part.transformation) }
       face = definition.entities.add_face(points)
-      # face = definition.entities.add_face(shape.points)
       face.reverse! unless face.normal.samedirection?(Z_AXIS)
       # Holes
       holes = shape.holes.map { |hole|
         points = hole.map { |point| point.transform(part.transformation) }
         definition.entities.add_face(points)
-        # definition.entities.add_face(hole)
       }
       definition.entities.erase_entities(holes)
     }
@@ -106,7 +104,6 @@ module TT::Plugins::MillingTools
     origin = definition.bounds.min
     tr_origin = Geom::Transformation.new(origin).inverse
     transformation = tr_origin * tr
-    # transformation = tr_origin * tr * part.transformation
     instance = entities.add_instance(definition, transformation)
     instance
   end
