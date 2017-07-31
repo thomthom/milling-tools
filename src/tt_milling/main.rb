@@ -18,6 +18,8 @@ require 'tt_milling/parts'
 
 module TT::Plugins::MillingTools
 
+  SELF = self # TODO: Refactor out.
+
   unless file_loaded?( __FILE__ )
     cmd = Command.new('Dog-Bone Fillets') {
       self.dog_bone

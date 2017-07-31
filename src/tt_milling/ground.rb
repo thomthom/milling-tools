@@ -56,7 +56,9 @@ module TT::Plugins::MillingTools
         definition = face.parent
         # p [face, definition]
         if definition.is_a?(Sketchup::ComponentDefinition)
-          tr = Geom::Transformation.new(ORIGIN, face.normal.reverse)
+          centroid = SELF.face_centroid(face)
+          tr_center = Geom::Transformation.new(centroid).inverse
+          tr = Geom::Transformation.new(ORIGIN, face.normal.reverse) * tr_center
           inverse_tr = tr.inverse
           # p tr.to_a.each_slice(4) { |slice| p slice }
           face.model.start_operation('Set Ground Plane', true)
