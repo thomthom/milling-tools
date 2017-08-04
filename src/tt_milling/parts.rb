@@ -29,12 +29,15 @@ module TT::Plugins::MillingTools
 
     parts = self.collect_parts(entities)
 
-    model.start_operation('Generate Cut Parts', true)
-    parts.each { |part|
-      instance = self.generate_part_instance(part, x, y)
-      y += instance.bounds.height + 20.mm
-    }
-    model.commit_operation
+    begin
+      model.start_operation('Generate Cut Parts', true)
+      parts.each { |part|
+        instance = self.generate_part_instance(part, x, y)
+        y += instance.bounds.height + 20.mm
+      }
+    ensure
+      model.commit_operation
+    end
   end
 
 
@@ -139,7 +142,9 @@ module TT::Plugins::MillingTools
   end
 
 
+  class FaceCreateError < RuntimeError; end
   def self.face_from_loop(entities, loop)
+    existing_edges = entities.grep(Sketchup::Edge)
     edges = []
     loop.edges.each { |points|
       edges << entities.add_line(*points)
@@ -150,7 +155,21 @@ module TT::Plugins::MillingTools
                                    arc.num_segments)
       edges.concat(arc_edges)
     }
-    entities.add_face(edges)
+    # Clean up stray edges after potential edge intersection merges.
+    stray_edges = entities.grep(Sketchup::Edge).select { |edge|
+      edge.vertices.any? { |vertex|
+        vertex.edges.size < 2
+      }
+    }
+    entities.erase_entities(stray_edges) unless stray_edges.empty?
+    # Find the new edges from the newly created loop.
+    edges = entities.grep(Sketchup::Edge) - existing_edges
+    # SketchUp will sort the edges and generate a face from them.
+    face = entities.add_face(edges)
+    if face.nil?
+      raise FaceCreateError, "failed to create face from edges"
+    end
+    face
   end
 
 end # module
