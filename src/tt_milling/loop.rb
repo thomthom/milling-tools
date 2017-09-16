@@ -37,7 +37,7 @@ module TT::Plugins::MillingTools
     end
 
     def inspect
-      object_info(" #{@thickness}, #{@points.size} points, #{@holes.size} holes")
+      object_info(" #{@thickness}, #{@edges.size} edges, #{@arcs.size} arcs")
     end
 
   end # class

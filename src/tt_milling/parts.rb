@@ -123,7 +123,7 @@ module TT::Plugins::MillingTools
     part.shapes.each { |shape|
       # Boundary
       face = self.face_from_loop(definition.entities, shape.outer_loop)
-      face.reverse! unless face.normal.samedirection?(Z_AXIS)
+      face.reverse! unless face.nil? || face.normal.samedirection?(Z_AXIS)
       # Holes
       holes = shape.holes.map { |hole|
         self.face_from_loop(definition.entities, hole)
@@ -142,19 +142,54 @@ module TT::Plugins::MillingTools
   end
 
 
+  def self.trace(*args)
+    puts(*args) if false
+  end
+
+
   class FaceCreateError < RuntimeError; end
-  def self.face_from_loop(entities, loop)
+  # @param [Boolean] create_face debug parameter to control whether the face is
+  #   actually created.
+  def self.face_from_loop(entities, loop, create_face = true)
+    trace
+    trace '=' * 20
+    trace "face_from_loop (debug = #{create_face})"
+    trace "  Faces 01: #{entities.grep(Sketchup::Face).size}"
+    # Cache the existing faces and edges. This is used later on to determine
+    # exactly what new entities we generate. The return values are not reliable.
     existing_edges = entities.grep(Sketchup::Edge)
+    existing_faces = entities.grep(Sketchup::Face)
+    # This is the set of new edges generates.
     edges = []
+    # First create the edges from straight segments.
     loop.edges.each { |points|
+      trace "Points: #{points.inspect}"
       edges << entities.add_line(*points)
     }
+    trace "  Faces 02: #{entities.grep(Sketchup::Face).size}"
+    # Then the edges from arcs and circles.
     loop.arcs.each { |arc|
+      trace "Arc: #{arc.inspect}"
       arc_edges = entities.add_arc(arc.center, arc.xaxis, arc.normal, arc.radius,
                                    arc.start_angle, arc.end_angle,
                                    arc.num_segments)
       edges.concat(arc_edges)
     }
+    trace "  Faces 03: #{entities.grep(Sketchup::Face).size}"
+    # Adding arcs/circles might split the face and create a new face already.
+    # If we do then .add_face later on will return nil.
+    new_faces = entities.grep(Sketchup::Face) - existing_faces
+    if new_faces.size > 1
+      # Not sure how to handle any potential edge case of generating multiple
+      # new faces. Would this think would only happen with some really strange
+      # intersecting loops.
+      raise FaceCreateError, "created too many faces (#{new_faces.size}), unable to proceed"
+    end
+    # If we already created a face then there is no need to proceed.
+    return new_faces.first unless new_faces.empty?
+    # If we didn't create a new face already then try to manually create it
+    # from the looping edges. This is the typical scenario unless the hole
+    # is a circle.
     # Clean up stray edges after potential edge intersection merges.
     stray_edges = entities.grep(Sketchup::Edge).select { |edge|
       edge.vertices.any? { |vertex|
@@ -165,8 +200,9 @@ module TT::Plugins::MillingTools
     # Find the new edges from the newly created loop.
     edges = entities.grep(Sketchup::Edge) - existing_edges
     # SketchUp will sort the edges and generate a face from them.
-    face = entities.add_face(edges)
-    if face.nil?
+    face = create_face ? entities.add_face(edges) : nil
+    trace "  Faces 04: #{entities.grep(Sketchup::Face).size}"
+    if create_face && face.nil?
       raise FaceCreateError, "failed to create face from edges"
     end
     face
